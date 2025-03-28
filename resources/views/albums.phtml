@@ -1,0 +1,174 @@
+<?php
+
+declare(strict_types=1);
+
+use Fisharebest\Webtrees\Family;
+use Fisharebest\Webtrees\Http\RequestHandlers\CreateMediaObjectModal;
+use Fisharebest\Webtrees\Http\RequestHandlers\MediaPage;
+use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\Individual;
+use Fisharebest\Webtrees\Location;
+use Fisharebest\Webtrees\Note;
+use Fisharebest\Webtrees\Repository;
+use Fisharebest\Webtrees\Source;
+use Fisharebest\Webtrees\Tree;
+use Illuminate\Support\Collection;
+use Komputeryk\Webtrees\AlbumsManager\Controller\AlbumsPage;
+use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
+
+/**
+ * @var Collection<int,Tree>       $all_trees
+ * @var bool                       $exist_locations
+ * @var bool                       $exist_notes
+ * @var bool                       $exist_repositories
+ * @var bool                       $exist_sources
+ * @var Collection<int,Family>     $families
+ * @var Collection<int,Individual> $individuals
+ * @var Collection<int,Location>   $locations
+ * @var Collection<int,Note>       $notes
+ * @var string                     $query
+ * @var Collection<int,Repository> $repositories
+ * @var Collection<int,Source>     $sources
+ * @var bool                       $search_families
+ * @var bool                       $search_individuals
+ * @var bool                       $search_locations
+ * @var bool                       $search_notes
+ * @var bool                       $search_repositories
+ * @var bool                       $search_sources
+ * @var Collection<int,Tree>       $search_trees
+ * @var string                     $title
+ * @var Tree                       $tree
+ */
+
+?>
+
+<style>
+.file-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.file-list__entry {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+/*
+.file-list__entry:last-child {
+    border-bottom: 1px solid #eee;
+}
+*/
+
+.file-list__thumbnail {
+    height: 64px;
+    width: 64px;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.file-list__path {
+    margin-left: 10px;
+    flex: 1;
+}
+
+.file_list__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 30px;
+    gap: 10px;
+}
+
+.file-list__entry input[type=checkbox] {
+    transform: scale(1.5, 1.5);
+}
+
+.file-list__entry input[type=checkbox]:not([disabled]) {
+    cursor: pointer;
+}
+
+.file-list__thumbnail--none {
+    fill: #bb0000;
+}
+</style>
+
+<h2 class="wt-page-title">
+    <?= $title ?>
+</h2>
+
+<form id="file-list" class="file-list" method="POST">
+    <?php if (!empty($path)) : ?>
+        <a class="file-list__entry" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => array_slice($path, 0, -1) ]) ?>">
+            <div class="file-list__thumbnail"><?= $folder_icon ?></div>
+            <div class="file-list__path">..</div>
+            <div>
+                <input type="checkbox" disabled title="<?= I18N::translate('LBL_CANNOT_IMPORT_DIRECTORY') ?>">
+            </div>
+        </a>
+    <?php endif ?>
+
+    <?php foreach ($directories as $directory) : ?>
+        <a class="file-list__entry" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => [...$path, $directory]]) ?>">
+            <div class="file-list__thumbnail"><?= $folder_icon ?></div>
+            <div class="file-list__path"><?= $directory ?></div>
+            <div>
+                <input type="checkbox" disabled title="<?= I18N::translate('LBL_CANNOT_IMPORT_DIRECTORY') ?>">
+            </div>
+        </a>
+    <?php endforeach ?>
+
+    <?php foreach ($imported_files as $file) : ?>
+        <div class="file-list__entry">
+            <div class="file-list__thumbnail">
+                <?php if (!empty($file['thumbnail'])) : ?>
+                    <?= $file['thumbnail'] ?>
+                <?php endif ?>
+            </div>
+            <a class="file-list__path" href="<?= route(MediaPage::class, [ 'tree' => $tree->name(), 'xref' => $file['xref'] ]) ?>">
+                <?= $file['name'] ?>
+            </a>
+            <div>
+                <input type="checkbox" disabled title="<?= I18N::translate('LBL_IMAGE_ALREADY_IMPORTED') ?>">
+            </div>
+        </div>
+    <?php endforeach ?>
+
+    <?php foreach ($unimported_files as $file) : ?>
+        <div class="file-list__entry">
+            <div class="file-list__thumbnail file-list__thumbnail--none" title="<?= I18N::translate('LBL_THUMBNAIL_NOT_ACCESSIBLE') ?>">
+                <?= $unimported_icon ?>
+            </div>
+            <div class="file-list__path"><?= $file ?></div>
+            <div>
+                <input type="checkbox" name="import_files[]" value="<?= $file ?>">
+            </div>
+        </div>
+    <?php endforeach ?>
+
+    <div class="file_list__actions">
+        <button type="button" class="btn btn-secondary" id="unselect-all"><?= I18N::translate('LBL_UNSELECT_ALL') ?></button>
+        <button type="button" class="btn btn-secondary" id="select-all"><?= I18N::translate('LBL_SELECT_ALL') ?></button>
+        <a class="btn btn-primary" href="#" data-wt-href="<?= e(route(ImportSettingsModal::class, ['tree' => $tree->name()])) ?>" data-bs-target="#wt-ajax-modal" data-bs-toggle="modal" data-bs-backdrop="static">
+            <?= I18N::translate('LBL_IMPORT_ACTION') ?>
+        </a>
+    </div>
+
+    <?= csrf_field() ?>
+</form>
+
+<script>
+const setAllCheckboxes = state => () => {
+    const checkboxes = document.querySelectorAll('.file-list input[type="checkbox"]:not([disabled])');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = state;
+    });
+}
+
+document.querySelector('#select-all').addEventListener('click', setAllCheckboxes(true));
+document.querySelector('#unselect-all').addEventListener('click', setAllCheckboxes(false));
+</script>
+
+<?= view('modals/ajax') ?>

@@ -1,0 +1,15 @@
+{
+    "name": "qwercik/webtrees-albums-manager",
+    "autoload": {
+        "psr-4": {
+            "Komputeryk\\Webtrees\\AlbumsManager\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Eryk Andrzejewski",
+            "email": "erykandrzejewski@gmail.com"
+        }
+    ],
+    "require": {}
+}
