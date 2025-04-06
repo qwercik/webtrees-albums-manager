@@ -66,8 +66,8 @@ final class ImportAlbumsAction implements RequestHandlerInterface
 
         // UWAGA: póki co nie obsługuję sytuacji, kiedy importuję na raty pliki z tym samym prefiksem (które powinny trafić do tego samego obiektu media)
         $groupedPaths = $this->groupPathsByFilenamePrefix($paths);
-        foreach ($groupedPaths as $paths) {
-            $this->createMedia($tree, $paths, $params);
+        foreach ($groupedPaths as $currentPaths) {
+            $this->createMedia($tree, $currentPaths, $params);
         }
         FlashMessages::addMessage(
             I18N::translate('LBL_IMPORT_SUCCESS', count($paths)),
