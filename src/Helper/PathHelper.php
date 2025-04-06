@@ -72,8 +72,8 @@ class PathHelper
 
     public static function getFilename(string $path): string
     {
-        $pos = strpos($path, '/');
-        return $pos === false ? $path : substr($path, $pos + 1);
+        $parts = explode('/', $path);
+        return end($parts);
     }
 
     public static function extractPrefix(string $filename): string
