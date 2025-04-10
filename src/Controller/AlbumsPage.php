@@ -41,8 +41,7 @@ final class AlbumsPage implements RequestHandlerInterface
         }
 
         $fs = $tree->mediaFilesystem();
-        PathHelper::validatePath($fs, $path);
-        $realPath = implode('/', $path);
+        $realPath = PathHelper::getRealPath($fs, $path);
         $files = $this->getEntries($fs, $realPath, EntryType::File);
         $directories = $this->getEntries($fs, $realPath, EntryType::Directory);
         natsort($files);

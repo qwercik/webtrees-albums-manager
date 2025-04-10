@@ -111,7 +111,7 @@ use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
     <?php endif ?>
 
     <?php foreach ($directories as $directory) : ?>
-        <a class="file-list__entry" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => [...$path, $directory]]) ?>">
+        <a class="file-list__entry" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => [...$path, str_replace(' ', '-', $directory)]]) ?>">
             <div class="file-list__thumbnail"><?= $folder_icon ?></div>
             <div class="file-list__path"><?= $directory ?></div>
             <div>

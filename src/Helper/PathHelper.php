@@ -42,7 +42,7 @@ class PathHelper
         return $result;
     }
 
-    public static function validatePath(FilesystemOperator $fs, array $path): void
+    public static function getRealPath(FilesystemOperator $fs, array $path): string
     {
         $currentPath = '';
         foreach ($path as $dir) {
@@ -55,12 +55,18 @@ class PathHelper
                 ->map(fn($attributes) => PathHelper::getFilename($attributes->path()))            
                 ->toArray();
 
-            if (!in_array($dir, $entries)) {
-                throw new HttpNotFoundException(I18N::translate('LBL_DIR_NOT_FOUND'));
+            $tryDirs = [$dir, str_replace('-', ' ', $dir)];
+            foreach ($tryDirs as $tryDir) {
+                if (in_array($tryDir, $entries)) {
+                    $currentPath .= "$tryDir/";
+                    continue 2;
+                }
             }
 
-            $currentPath .= "$dir/";
+            throw new HttpNotFoundException(I18N::translate('LBL_DIR_NOT_FOUND'));
         }
+
+        return rtrim($currentPath, '/');
     }
 
     public static function getPath(array $basePath, string $filename): string
