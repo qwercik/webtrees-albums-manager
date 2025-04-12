@@ -38,7 +38,7 @@ final class ImportAlbumsAction implements RequestHandlerInterface
         $importFiles = Validator::parsedBody($request)->array('import_files');
         $type = Validator::parsedBody($request)->string('type', '');
         $fs = $tree->mediaFilesystem();
-        PathHelper::validatePath($fs, $path);
+        $realPath = PathHelper::getRealPath($fs, $path);
 
         if (empty($importFiles)) {
             FlashMessages::addMessage(I18N::translate('LBL_NO_FILES_SELECTED'), 'warning');
@@ -48,7 +48,7 @@ final class ImportAlbumsAction implements RequestHandlerInterface
             ]));
         }
 
-        $this->importPhotos($tree, $path, $importFiles, [
+        $this->importPhotos($tree, $realPath, $importFiles, [
             'type' => $type,
         ]);
 
@@ -58,7 +58,7 @@ final class ImportAlbumsAction implements RequestHandlerInterface
         ]));
     }
 
-    private function importPhotos(Tree $tree, array $path, array $files, array $params): void
+    private function importPhotos(Tree $tree, string $path, array $files, array $params): void
     {
         $paths = array_map(fn($filename) => PathHelper::getPath($path, $filename), $files);
         $paths = $this->getUnimportedFiles($paths);

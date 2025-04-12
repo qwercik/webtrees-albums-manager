@@ -69,11 +69,11 @@ class PathHelper
         return rtrim($currentPath, '/');
     }
 
-    public static function getPath(array $basePath, string $filename): string
+    public static function getPath(string $basePath, string $filename): string
     {
         return empty($basePath)
             ? $filename
-            : implode('/', $basePath) . '/' . $filename;
+            : $basePath . '/' . $filename;
     }
 
     public static function getFilename(string $path): string
