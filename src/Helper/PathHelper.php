@@ -7,6 +7,8 @@ namespace Komputeryk\Webtrees\AlbumsManager\Helper;
 use Fisharebest\Webtrees\Http\Exceptions\HttpBadRequestException;
 use Fisharebest\Webtrees\Http\Exceptions\HttpNotFoundException;
 use Fisharebest\Webtrees\I18N;
+use Fisharebest\Webtrees\MediaFile;
+use Komputeryk\Webtrees\AlbumsManager\Controller\AlbumsPage;
 use League\Flysystem\FilesystemOperator;
 
 class PathHelper
@@ -86,6 +88,15 @@ class PathHelper
     {
         $pos = strpos($filename, '.');
         return $pos === false ? $filename : substr($filename, 0, $pos);
+    }
+
+    public static function getMediaFileUrl(MediaFile $media_file): string
+    {
+        $path = explode('/', str_replace(' ', '-', dirname($media_file->filename())));
+        return route(AlbumsPage::class, [
+            'path' => $path,
+            'tree' => $media_file->media()->tree()->name(),
+        ]);
     }
 }
 

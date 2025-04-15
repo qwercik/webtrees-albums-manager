@@ -75,7 +75,7 @@ final class AlbumsPage implements RequestHandlerInterface
 
         return $this->viewResponse($this->module->name() . '::albums', [
             'tree' => $tree,
-            'title' => I18N::translate('LBL_ALBUMS_LIST'),
+            'title' => empty($path) ? I18N::translate('LBL_ALBUMS_LIST') : $realPath,
             'path' => $path,
             'folder_icon' => $this->module->getIcon('folder.svg'),
             'unimported_icon' => $this->module->getIcon('denied.svg'),

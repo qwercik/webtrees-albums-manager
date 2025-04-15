@@ -30,6 +30,12 @@ class AlbumsManagerModule extends AbstractModule implements ModuleCustomInterfac
 
     public const MODULE_DIR = __DIR__ . '/../';
 
+    public function __construct()
+    {
+        global $albumsManagerModule;
+        $albumsManagerModule = $this;
+    }
+
     /**
      * Bootstrap.  This function is called on *enabled* modules.
      * It is a good place to register routes and views.
@@ -40,6 +46,7 @@ class AlbumsManagerModule extends AbstractModule implements ModuleCustomInterfac
     public function boot(): void
     {
         View::registerNamespace($this->name(), static::MODULE_DIR . 'resources/views/');
+        View::registerCustomView('::media-page', $this->name() . '::media-page');
 
         $router = Registry::container()->get(RouterContainer::class)->getMap();
         $router->get(AlbumsPage::class, '/tree/{tree}/albums', new AlbumsPage($this))->wildcard('path');
