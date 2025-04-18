@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Komputeryk\Webtrees\AlbumsManager\Controller;
 
+use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\DB;
+use Fisharebest\Webtrees\Http\RequestHandlers\LoginPage;
 use Fisharebest\Webtrees\Http\ViewResponseTrait;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Media;
@@ -31,6 +33,10 @@ final class AlbumsPage implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        if (!Auth::check()) {
+            return redirect(route(LoginPage::class));
+        }
+
         $tree = Validator::attributes($request)->tree();
         $path = Validator::attributes($request)->array('path');
         if (PathHelper::removeTrailingSlashes($path)) {
@@ -103,7 +109,7 @@ final class AlbumsPage implements RequestHandlerInterface
             $media->mediaFiles()->toArray(),
             fn($mediaFile) => $mediaFile->filename() === $filename, 
         ))[0];
-        return $mediaFile->displayImage(200, 200, 'crop', ['class' => 'img-thumbnail img-fluid w-100']);
+        return $mediaFile->displayImage(200, 200, 'crop', ['class' => 'img-thumbnail img-fluid w-100', 'loading' => 'lazy']);
     }
 
     private function getEntries(FilesystemOperator $fs, string $directory, EntryType $type): array

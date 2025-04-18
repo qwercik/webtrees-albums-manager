@@ -14,6 +14,8 @@ use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Validator;
 use Komputeryk\Webtrees\AlbumsManager\AlbumsManagerModule;
 use Komputeryk\Webtrees\AlbumsManager\Helper\PathHelper;
+use Komputeryk\Webtrees\AlbumsManager\Jobs\GenerateThumbnailJob;
+use Komputeryk\Webtrees\JobQueue\JobQueueRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -83,6 +85,17 @@ final class ImportAlbumsAction implements RequestHandlerInterface
         ]);
         $record = $tree->createMediaObject($gedcom);
         $this->pendingChangesService->acceptRecord($record);
+
+        foreach ($paths as $path) {
+            JobQueueRepository::schedule('generate-thumbnail', [
+                'path' => $path,
+                'width' => 200,
+                'height' => 200,
+                'fit' => 'crop',
+                'add_watermark' => false,
+                'display_params' => '',
+            ]);
+        }
     }
 
     private function prepareMediaFileGedcom(string $path, array $params): string

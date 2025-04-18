@@ -21,6 +21,8 @@ use Fisharebest\Webtrees\View;
 use Komputeryk\Webtrees\AlbumsManager\Controller\AlbumsPage;
 use Komputeryk\Webtrees\AlbumsManager\Controller\ImportAlbumsAction;
 use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
+use Komputeryk\Webtrees\AlbumsManager\Factory\DetachedImageFactory;
+use Komputeryk\Webtrees\AlbumsManager\Job\GenerateThumbnailJob;
 
 class AlbumsManagerModule extends AbstractModule implements ModuleCustomInterface, ModuleMenuInterface, ModuleGlobalInterface
 {
@@ -45,10 +47,15 @@ class AlbumsManagerModule extends AbstractModule implements ModuleCustomInterfac
      */
     public function boot(): void
     {
+        Registry::imageFactory(new DetachedImageFactory);
         View::registerNamespace($this->name(), static::MODULE_DIR . 'resources/views/');
         View::registerCustomView('::media-page', $this->name() . '::media-page');
+        View::registerCustomView('::errors/image-svg', $this->name() . '::errors/image-svg');
 
-        $router = Registry::container()->get(RouterContainer::class)->getMap();
+        $container = Registry::container();
+        $container->set('generate-thumbnail', new GenerateThumbnailJob);
+
+        $router = $container->get(RouterContainer::class)->getMap();
         $router->get(AlbumsPage::class, '/tree/{tree}/albums', new AlbumsPage($this))->wildcard('path');
         $router->post(ImportAlbumsAction::class, '/tree/{tree}/albums', new ImportAlbumsAction($this))->wildcard('path');
         $router->get(ImportSettingsModal::class, '/tree/{tree}/albums-import-settings', new ImportSettingsModal($this));
