@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Fisharebest\Webtrees\Family;
-use Fisharebest\Webtrees\Http\RequestHandlers\CreateMediaObjectModal;
 use Fisharebest\Webtrees\Http\RequestHandlers\MediaPage;
 use Fisharebest\Webtrees\I18N;
 use Fisharebest\Webtrees\Individual;
@@ -40,6 +39,10 @@ use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
  * @var Tree                       $tree
  */
 
+$views = [
+    'browse' => I18N::translate('LBL_BROWSE'),
+    'manage' => I18N::translate('LBL_MANAGE'),
+];
 ?>
 
 <style>
@@ -54,12 +57,6 @@ use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
     align-items: center;
     border-bottom: 1px solid #eee;
 }
-
-/*
-.file-list__entry:last-child {
-    border-bottom: 1px solid #eee;
-}
-*/
 
 .file-list__thumbnail {
     height: 64px;
@@ -93,11 +90,87 @@ use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
 .file-list__thumbnail--none {
     fill: #bb0000;
 }
+
+.file-list__album-cover {
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.top-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+}
+
+.view--active {
+    background: #eee;
+}
+
 </style>
 
 <h2 class="wt-page-title">
     <?= $title ?>
 </h2>
+
+<div class="top-actions">
+    <ol style="margin: 0 0 20px 0; padding: 0; list-style: none; display: flex; border: 1px solid #ccc; border-radius: 10px; overflow: hidden">
+        <?php foreach ($views as $view => $label) : ?>
+            <li style="margin: 0" class="<?= $view === $current_view ? 'view--active' : '' ?>">
+                <a href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => $path, 'view' => $view ]) ?>" style="display: block; padding: 7px 14px"><?= $label ?></a>
+            </li>
+        <?php endforeach ?>
+    </ol>
+</div>
+
+
+<?php if ($current_view === 'browse') : ?>
+    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 16px">
+        <?php if (!empty($path)) : ?>
+            <a style="display: flex; flex-direction: column; align-items: center; flex: 0 1 calc(20% - 16px)" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => array_slice($path, 0, -1) ]) ?>">
+                <div style="position: relative; height: 200px; width: 200px"><?= $folder_icon ?></div>
+                <div style="transform: translateY(-10px)">..</div>
+            </a>
+        <?php endif ?>
+
+        <?php foreach ($directories as $directory) : ?>
+            <a style="display: flex; flex-direction: column; align-items: center; flex: 0 1 calc(20% - 16px)" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => [...$path, str_replace(' ', '-', $directory)]]) ?>">
+                <div style="position: relative; height: 200px; width: 200px">
+                    <?= $folder_icon ?>
+                    <?php if (isset($covers[$directory])) : ?>
+                        <img src="<?= $covers[$directory] ?>" style="width: 80px; height: 96px; position: absolute; top: 58px; left: 50%; border: 1px solid rgba(0,0,0,0.75); border-radius: 5%" loading="lazy">
+                    <?php endif ?>
+                </div>
+                <div style="transform: translateY(-10px)"><?= $directory ?></div>
+            </a>
+        <?php endforeach ?>
+
+        <?php foreach ($imported_files as $file) : ?>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 0 1 calc(20% - 16px)">
+                <div style="position: relative; height: 200px; width: 200px">
+                    <?php if (!empty($file['thumbnail'])) : ?>
+                        <?= $file['thumbnail'] ?>
+                    <?php endif ?>
+                </div>
+                <a href="<?= route(MediaPage::class, [ 'tree' => $tree->name(), 'xref' => $file['xref'] ]) ?>" style="max-width: 200px; text-wrap: wrap; word-wrap: break-word; text-align: center">
+                    <?= $file['name'] ?>
+                </a>
+            </div>
+        <?php endforeach ?>
+
+        <?php foreach ($unimported_files as $file) : ?>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 0 1 calc(20% - 16px)">
+                <div class="file-list__thumbnail--none" style="position: relative; height: 200px; width: 200px" title="<?= I18N::translate('LBL_THUMBNAIL_NOT_ACCESSIBLE') ?>">
+                    <?= $unimported_icon ?>
+                </div>
+                <div><?= $file ?></div>
+            </div>
+        <?php endforeach ?>
+    </div>
+<?php elseif ($current_view === 'manage') : ?>
 
 <form id="file-list" class="file-list" method="POST">
     <?php if (!empty($path)) : ?>
@@ -112,7 +185,12 @@ use Komputeryk\Webtrees\AlbumsManager\Controller\ImportSettingsModal;
 
     <?php foreach ($directories as $directory) : ?>
         <a class="file-list__entry" href="<?= route(AlbumsPage::class, [ 'tree' => $tree->name(), 'path' => [...$path, str_replace(' ', '-', $directory)]]) ?>">
-            <div class="file-list__thumbnail"><?= $folder_icon ?></div>
+            <div class="file-list__thumbnail" style="position: relative">
+                <?= $folder_icon ?>
+                <?php if (isset($covers[$directory])) : ?>
+                    <img src="<?= $covers[$directory] ?>" class="file-list__album-cover">
+                <?php endif ?>
+            </div>
             <div class="file-list__path"><?= $directory ?></div>
             <div>
                 <input type="checkbox" disabled title="<?= I18N::translate('LBL_CANNOT_IMPORT_DIRECTORY') ?>">
@@ -172,3 +250,4 @@ document.querySelector('#unselect-all').addEventListener('click', setAllCheckbox
 </script>
 
 <?= view('modals/ajax') ?>
+<?php endif ?>

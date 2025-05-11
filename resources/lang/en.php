@@ -17,4 +17,6 @@ return [
     'LBL_SELECT_ALL' => 'Select all',
     'LBL_UNSELECT_ALL' => 'Unselect all',
     'LBL_THUMBNAIL_NOT_ACCESSIBLE' => 'Thumbnail is not accessible for unimported images',
+    'LBL_BROWSE' => 'Browse',
+    'LBL_MANAGE' => 'Manage',
 ];

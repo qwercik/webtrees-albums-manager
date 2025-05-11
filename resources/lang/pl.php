@@ -17,4 +17,6 @@ return [
     'LBL_SELECT_ALL' => 'Zaznacz wszystkie',
     'LBL_UNSELECT_ALL' => 'Odznacz wszystkie',
     'LBL_THUMBNAIL_NOT_ACCESSIBLE' => 'Miniatury nie są dostępne dla niezaimportowanych obrazów',
+    'LBL_BROWSE' => 'Przeglądaj',
+    'LBL_MANAGE' => 'Zarządzaj',
 ];

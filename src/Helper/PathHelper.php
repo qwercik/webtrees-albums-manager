@@ -78,6 +78,16 @@ class PathHelper
             : $basePath . '/' . $filename;
     }
 
+    public static function getDirname(string $path): string
+    {
+        $parts = explode('/', $path);
+        if (count($parts) < 2) {
+            return '';
+        }
+
+        return $parts[count($parts) - 2];
+    }
+
     public static function getFilename(string $path): string
     {
         $parts = explode('/', $path);
