@@ -19,11 +19,13 @@ use Komputeryk\Webtrees\JobQueue\JobQueueRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use UksusoFF\WebtreesModules\Faces\Helpers\DatabaseHelper;
 
 final class ImportAlbumsAction implements RequestHandlerInterface
 {
     private MediaFileService $mediaFileService;
     private PendingChangesService $pendingChangesService;
+    private DatabaseHelper $facesDbHelper;
 
     public function __construct(
         private AlbumsManagerModule $module
@@ -31,6 +33,7 @@ final class ImportAlbumsAction implements RequestHandlerInterface
     {
         $this->mediaFileService = new MediaFileService();
         $this->pendingChangesService = new PendingChangesService(new GedcomImportService);
+        $this->facesDbHelper = new DatabaseHelper();
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -83,10 +86,10 @@ final class ImportAlbumsAction implements RequestHandlerInterface
             '0 @@ OBJE',
             ...array_map(fn($path) => $this->prepareMediaFileGedcom($path, $params), $paths)
         ]);
-        $record = $tree->createMediaObject($gedcom);
-        $this->pendingChangesService->acceptRecord($record);
+        $media = $tree->createMediaObject($gedcom);
+        $this->pendingChangesService->acceptRecord($media);
 
-        foreach ($paths as $path) {
+        foreach ($paths as $i => $path) {
             JobQueueRepository::schedule('generate-thumbnail', [
                 'path' => $path,
                 'width' => 200,
@@ -95,6 +98,16 @@ final class ImportAlbumsAction implements RequestHandlerInterface
                 'add_watermark' => false,
                 'display_params' => '',
             ]);
+
+            if ($params['type'] === 'PHOTO' && $i === 0) {
+                $this->facesDbHelper->setMediaMap(
+                    $tree->id(),
+                    $media->xref(),
+                    $i,
+                    json_encode([]),
+                    $path
+                );
+            }
         }
     }
 
