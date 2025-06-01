@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Komputeryk\Webtrees\AlbumsManager\Job;
 
+use Exception;
 use Fisharebest\Webtrees\Contracts\ImageFactoryInterface;
 use Fisharebest\Webtrees\DB;
 use Fisharebest\Webtrees\Media;
 use Fisharebest\Webtrees\Registry;
 use Fisharebest\Webtrees\Services\GedcomImportService;
 use Fisharebest\Webtrees\Services\TreeService;
-use Throwable;
+use Komputeryk\Webtrees\JobQueue\Job;
 
 class GenerateThumbnailJob
 {
@@ -21,46 +22,26 @@ class GenerateThumbnailJob
         $this->imageFactory = Registry::imageFactory();
     }
 
-    public function run(array $jobs): array
+    public function run(Job $job): void
     {
         global $allow_generating_thumbnails;
         $allow_generating_thumbnails = true;
-        $results = $this->generateThumbnails($jobs);
-        $allow_generating_thumbnails = false;
-        return $results;
-    }
 
-    private function generateThumbnails(array $jobs): array
-    {
-        $paths = array_map(fn($job) => $job->data['path'], $jobs);
-        $media_files = $this->fetchMediaFiles($paths);
-
-        $results = [];
-        foreach ($jobs as $task) {
-            $path = $task->data['path'];
-            if (empty($media_files[$path])) {
-                $results[$task->id] = $this->makeErrorResponse('Media file not found');
-                continue;
-            }
-
-            try {
-                $this->imageFactory->mediaFileThumbnailResponse(
-                    $media_files[$path],
-                    $task->data['width'],
-                    $task->data['height'],
-                    $task->data['fit'],
-                    $task->data['add_watermark'],
-                    $task->data['display_params'],
-                );
-            } catch (Throwable $e) {
-                $results[$task->id] = $this->makeErrorResponse($e->getMessage());
-                continue;
-            }
-
-            $results[$task->id] = $this->makeSuccessResponse();
+        $path = $job->params['path'];
+        $media_files = $this->fetchMediaFiles([$path]);
+        if (empty($media_files[$path])) {
+            throw new Exception('Media file not found');
         }
 
-        return $results;
+        $this->imageFactory->mediaFileThumbnailResponse(
+            $media_files[$path],
+            $job->params['width'],
+            $job->params['height'],
+            $job->params['fit'],
+            $job->params['add_watermark'],
+            $job->params['display_params'],
+        );
+        $allow_generating_thumbnails = false;
     }
 
     private function fetchMediaFiles(array $paths): array
@@ -82,20 +63,5 @@ class GenerateThumbnailJob
         }
 
         return $media_files;
-    }
-
-    private function makeSuccessResponse(): array
-    {
-        return [
-            'status' => 'success',
-        ];
-    }
-
-    private function makeErrorResponse(string $message): array
-    {
-        return [
-            'status' => 'error',
-            'message' => $message,
-        ];
     }
 }

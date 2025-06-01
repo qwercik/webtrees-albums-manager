@@ -14,18 +14,18 @@ use Fisharebest\Webtrees\Tree;
 use Fisharebest\Webtrees\Validator;
 use Komputeryk\Webtrees\AlbumsManager\AlbumsManagerModule;
 use Komputeryk\Webtrees\AlbumsManager\Helper\PathHelper;
-use Komputeryk\Webtrees\AlbumsManager\Jobs\GenerateThumbnailJob;
-use Komputeryk\Webtrees\JobQueue\JobQueueRepository;
+use Komputeryk\Webtrees\JobQueue\Job;
+use Komputeryk\Webtrees\JobQueue\JobQueue;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use UksusoFF\WebtreesModules\Faces\Helpers\DatabaseHelper;
+use UksusoFF\WebtreesModules\Faces\Repository\MediaFileRepository;
 
 final class ImportAlbumsAction implements RequestHandlerInterface
 {
     private MediaFileService $mediaFileService;
     private PendingChangesService $pendingChangesService;
-    private DatabaseHelper $facesDbHelper;
+    private MediaFileRepository $mediaFileRepository;
 
     public function __construct(
         private AlbumsManagerModule $module
@@ -33,7 +33,7 @@ final class ImportAlbumsAction implements RequestHandlerInterface
     {
         $this->mediaFileService = new MediaFileService();
         $this->pendingChangesService = new PendingChangesService(new GedcomImportService);
-        $this->facesDbHelper = new DatabaseHelper();
+        $this->mediaFileRepository = new MediaFileRepository();
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -90,23 +90,27 @@ final class ImportAlbumsAction implements RequestHandlerInterface
         $this->pendingChangesService->acceptRecord($media);
 
         foreach ($paths as $i => $path) {
-            JobQueueRepository::schedule('generate-thumbnail', [
-                'path' => $path,
-                'width' => 200,
-                'height' => 200,
-                'fit' => 'crop',
-                'add_watermark' => false,
-                'display_params' => '',
-            ]);
+            JobQueue::schedule(Job::create(
+                job: 'generate-thumbnail',
+                params: [
+                    'path' => $path,
+                    'width' => 200,
+                    'height' => 200,
+                    'fit' => 'crop',
+                    'add_watermark' => false,
+                    'display_params' => '',
+                ],
+                priority: 10,
+            ));
 
             if ($params['type'] === 'PHOTO' && $i === 0) {
-                $this->facesDbHelper->setMediaMap(
+                $id = $this->mediaFileRepository->insertFacesData(
                     $tree->id(),
                     $media->xref(),
                     $i,
-                    json_encode([]),
                     $path
                 );
+                JobQueue::schedule(Job::create('sznupa/index', ['f_id' => $id]));
             }
         }
     }

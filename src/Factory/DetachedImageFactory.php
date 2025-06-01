@@ -12,7 +12,6 @@ use Intervention\Gif\Exceptions\NotReadableException;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\UnableToReadFile;
 use Psr\Http\Message\ResponseInterface;
-use Komputeryk\Webtrees\JobQueue\JobQueueRepository;
 use Komputeryk\Webtrees\AlbumsManager\Exception\ThumbnailNotGeneratedYetException;
 use Throwable;
 
@@ -56,7 +55,7 @@ class DetachedImageFactory extends ImageFactory
                     'add_watermark' => $add_watermark,
                     'display_params' => $display_params,
                 ];
-                if (JobQueueRepository::isScheduled('generate-thumbnail', $jobParams) && empty($allow_generating_thumbnails)) {
+                if (empty($allow_generating_thumbnails) && $this->requiresDetachedGenerating($jobParams)) {
                     throw new ThumbnailNotGeneratedYetException;
                 }
 
@@ -106,5 +105,14 @@ class DetachedImageFactory extends ImageFactory
                 ->replacementImageResponse(text: (string) StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR)
                 ->withHeader('x-thumbnail-exception', get_class(object: $ex) . ': ' . $ex->getMessage());
         }
+    }
+
+    private function requiresDetachedGenerating(array $params): bool
+    {
+        return $params['width'] === 200
+            && $params['height'] === 200
+            && $params['fit'] === 'crop'
+            && $params['add_watermark'] === false
+            && $params['display_params'] === '';
     }
 }
